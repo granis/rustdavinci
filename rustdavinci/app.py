@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from PyQt5 import QtCore
-from PyQt5 import QtWidgets
+from PyQt6 import QtCore
+from PyQt6 import QtWidgets
 
 import sys
 
-from ui.views.main import MainWindow
+from rustdavinci.ui.views.main import MainWindow
 
 
 def run():
@@ -20,7 +20,7 @@ def run():
 
     main = MainWindow()
     main.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":
