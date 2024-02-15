@@ -796,8 +796,10 @@ class rustDaVinci():
 
     def key_event(self, key):
         """ Key-press thread during painting. """
-        try: key_str = str(key.char)
-        except: key_str = str(key.name)
+        try:
+            key_str = str(key.char)
+        except AttributeError:
+            key_str = str(key.name)
 
         if key_str == self.pause_key:       # Pause
             self.paused = not self.paused
