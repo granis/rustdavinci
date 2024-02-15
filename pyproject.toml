@@ -1,0 +1,74 @@
+[tool.poetry]
+name = "RustDaVinci"
+version = "0.0.1"
+description = "Automatic Sign Art Painter for the game Rust by Facepunch."
+authors = ["Alexander Emanuelsson <Alexander.Emanuelsson94@gmail.com>"]
+repository = "https://github.com/granis/rustdavinci"
+documentation = "https://github.com/granis/rustdavinci"
+readme = "README.md"
+keywords = ['rustdavinci', 'rust', 'paint']
+packages = [{ include = "rustdavinci" }]
+
+[tool.poetry.dependencies]
+python = ">=3.12,<3.13"
+pillow = "^10.2.0"
+pywin32 = "^306"
+pyautogui = "^0.9.54"
+colorama = "^0.4.6"
+termcolor = "^2.4.0"
+pynput = "^1.7.6"
+numpy = "^1.26.4"
+opencv-python = "^4.9.0.80"
+pyqt6 = "^6.6.1"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.2.1"
+pyinstaller = "^6.4.0"
+pyside6 = "^6.6.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+fix = true
+select = [
+  # flake8-2020
+  "YTT",
+  # flake8-bandit
+  "S",
+  # flake8-bugbear
+  "B",
+  # flake8-builtins
+  "A",
+  # flake8-comprehensions
+  "C4",
+  # flake8-debugger
+  "T10",
+  # flake8-simplify
+  "SIM",
+  # isort
+  "I",
+  # mccabe
+  "C90",
+  # pycodestyle
+  "E",
+  "W",
+  # pyflakes
+  "F",
+  # pygrep-hooks
+  "PGH",
+  # pyupgrade
+  "UP",
+  # ruff
+  "RUF",
+  # tryceratops
+  "TRY",
+]
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+docstring-code-format = true
