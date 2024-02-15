@@ -270,13 +270,13 @@ class rustDaVinci():
         y_correction = 0
 
         if hsize <= self.canvas_h:
-            resized_img = self.org_img.resize((self.canvas_w, hsize), Image.ANTIALIAS)
+            resized_img = self.org_img.resize((self.canvas_w, hsize), Image.LANCZOS)
             y_correction = int((self.canvas_h - hsize)/2)
         elif wsize <= self.canvas_w:
-            resized_img = self.org_img.resize((wsize, self.canvas_h), Image.ANTIALIAS)
+            resized_img = self.org_img.resize((wsize, self.canvas_h), Image.LANCZOS)
             x_correction = int((self.canvas_w - wsize)/2)
         else:
-            resized_img = self.org_img.resize((self.canvas_w, self.canvas_h), Image.ANTIALIAS)
+            resized_img = self.org_img.resize((self.canvas_w, self.canvas_h), Image.LANCZOS )
 
         self.quantized_img = self.quantize_to_palette(resized_img)
         if self.quantized_img == False:
