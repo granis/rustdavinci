@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from pynput import keyboard
-
+import time
 import tkinter
+
 import pyautogui
 import win32api
-import time
+from pynput import keyboard
 
 abort_capturing_mode = False
 
@@ -27,8 +27,9 @@ def capture_area():
     global abort_capturing_mode
     listener = keyboard.Listener(on_press=key_event)
     listener.start()
+    root = tkinter.Tk()
+    root.withdraw()
 
-    root = tkinter.Tk().withdraw()
     area = tkinter.Toplevel(root)
     area.overrideredirect(1)
     area.wm_attributes('-alpha',0.5)

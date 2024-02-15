@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtCore import QSettings, Qt
-from PyQt5.QtGui import QPalette, QColor
-from PyQt5.QtWidgets import QDialog, QColorDialog, QListWidgetItem
+from PyQt6.QtCore import QSettings, Qt
+from PyQt6.QtGui import QColor, QPalette
+from PyQt6.QtWidgets import QColorDialog, QDialog, QListWidgetItem
 
-import sys
-
-from ui.settings.default_settings import default_settings
-from ui.settings.settingsui import Ui_SettingsUI
-from lib.color_functions import hex_to_rgb, rgb_to_hex, closest_color
-from lib.captureArea import show_area
-from ui.dialogs.colors.colors import Colors
-from ui.dialogs.click_color.click_color import Click_Color
+from rustdavinci.lib.captureArea import show_area
+from ...lib.color_functions import closest_color, hex_to_rgb, rgb_to_hex
+from ..dialogs.click_color.click_color import Click_Color
+from ..dialogs.colors.colors import Colors
+from ..settings.default_settings import default_settings
+from ..settings.settingsui import Ui_SettingsUI
 
 
 class Settings(QDialog):
@@ -147,10 +145,10 @@ class Settings(QDialog):
         background_color = self.settings.value("background_color", default_settings["background_color"])
         rgb = hex_to_rgb(background_color)
         if (rgb[0]*0.299 + rgb[1]*0.587 + rgb[2]*0.114) > 186:
-            self.qpalette.setColor(QPalette.Text, QColor(0, 0, 0))
+            self.qpalette.setColor(QPalette.ColorRole.Text, QColor(0, 0, 0))
         else:
-            self.qpalette.setColor(QPalette.Text, QColor(255, 255, 255))
-        self.qpalette.setColor(QPalette.Base, QColor(rgb[0], rgb[1], rgb[2]))
+            self.qpalette.setColor(QPalette.ColorRole.Text, QColor(255, 255, 255))
+        self.qpalette.setColor(QPalette.ColorRole.Base, QColor(rgb[0], rgb[1], rgb[2]))
         self.ui.background_LineEdit.setPalette(self.qpalette)
         self.ui.background_LineEdit.setText(background_color)
 
@@ -180,8 +178,8 @@ class Settings(QDialog):
     def setting_to_checkbox(self, name, checkBox, default):
         """ Settings integer values converted to checkbox """
         val = int(self.settings.value(name, default))
-        if val: checkBox.setCheckState(Qt.Checked)
-        else: checkBox.setCheckState(Qt.Unchecked)
+        if val: checkBox.setCheckState(Qt.CheckState.Checked)
+        else: checkBox.setCheckState(Qt.CheckState.Unchecked)
 
 
     def saveSettings(self):
@@ -255,18 +253,18 @@ class Settings(QDialog):
     def default_clicked(self):
         """ Set everything to the default values. """
         # Checkboxes
-        self.ui.topmost_CheckBox.setCheckState(Qt.Checked)
-        self.ui.skip_background_CheckBox.setCheckState(Qt.Checked)
-        self.ui.update_canvas_CheckBox.setCheckState(Qt.Checked)
-        self.ui.update_canvas_end_CheckBox.setCheckState(Qt.Checked)
-        self.ui.draw_lines_CheckBox.setCheckState(Qt.Checked)
-        self.ui.double_click_CheckBox.setCheckState(Qt.Unchecked)
-        self.ui.show_info_CheckBox.setCheckState(Qt.Checked)
-        self.ui.show_preview_CheckBox.setCheckState(Qt.Unchecked)
-        self.ui.hide_preview_CheckBox.setCheckState(Qt.Unchecked)
-        self.ui.paint_background_CheckBox.setCheckState(Qt.Unchecked)
-        self.ui.opacities_CheckBox.setCheckState(Qt.Checked)
-        self.ui.hidden_colors_CheckBox.setCheckState(Qt.Unchecked)
+        self.ui.topmost_CheckBox.setCheckState(Qt.CheckState.Checked)
+        self.ui.skip_background_CheckBox.setCheckState(Qt.CheckState.Checked)
+        self.ui.update_canvas_CheckBox.setCheckState(Qt.CheckState.Checked)
+        self.ui.update_canvas_end_CheckBox.setCheckState(Qt.CheckState.Checked)
+        self.ui.draw_lines_CheckBox.setCheckState(Qt.CheckState.Checked)
+        self.ui.double_click_CheckBox.setCheckState(Qt.CheckState.Unchecked)
+        self.ui.show_info_CheckBox.setCheckState(Qt.CheckState.Checked)
+        self.ui.show_preview_CheckBox.setCheckState(Qt.CheckState.Unchecked)
+        self.ui.hide_preview_CheckBox.setCheckState(Qt.CheckState.Unchecked)
+        self.ui.paint_background_CheckBox.setCheckState(Qt.CheckState.Unchecked)
+        self.ui.opacities_CheckBox.setCheckState(Qt.CheckState.Checked)
+        self.ui.hidden_colors_CheckBox.setCheckState(Qt.CheckState.Unchecked)
 
         # Comboboxes
         self.ui.quality_ComboBox.setCurrentIndex(default_settings["quality"])
@@ -283,10 +281,10 @@ class Settings(QDialog):
 
         rgb = hex_to_rgb(default_settings["background_color"])
         if (rgb[0]*0.299 + rgb[1]*0.587 + rgb[2]*0.114) > 186:
-            self.qpalette.setColor(QPalette.Text, QColor(0, 0, 0))
+            self.qpalette.setColor(QPalette.ColorRole.Text, QColor(0, 0, 0))
         else:
-            self.qpalette.setColor(QPalette.Text, QColor(255, 255, 255))
-        self.qpalette.setColor(QPalette.Base, QColor(rgb[0], rgb[1], rgb[2]))
+            self.qpalette.setColor(QPalette.ColorRole.Text, QColor(255, 255, 255))
+        self.qpalette.setColor(QPalette.ColorRole.Base, QColor(rgb[0], rgb[1], rgb[2]))
         self.ui.background_LineEdit.setPalette(self.qpalette)
         self.ui.background_LineEdit.setText(default_settings["background_color"])
 
@@ -352,10 +350,10 @@ class Settings(QDialog):
         if selected_color.isValid():
             color = closest_color(hex_to_rgb(selected_color.name()))
             if (color[0]*0.299 + color[1]*0.587 + color[2]*0.114) > 186:
-                self.qpalette.setColor(QPalette.Text, QColor(0, 0, 0))
+                self.qpalette.setColor(QPalette.ColorRole.Text, QColor(0, 0, 0))
             else:
-                self.qpalette.setColor(QPalette.Text, QColor(255, 255, 255))
-            self.qpalette.setColor(QPalette.Base, QColor(color[0], color[1], color[2]))
+                self.qpalette.setColor(QPalette.ColorRole.Text, QColor(255, 255, 255))
+            self.qpalette.setColor(QPalette.ColorRole.Base, QColor(color[0], color[1], color[2]))
             self.ui.background_LineEdit.setPalette(self.qpalette)
             hex = rgb_to_hex(color)
             self.ui.background_LineEdit.setText(hex)
@@ -402,7 +400,7 @@ class Settings(QDialog):
     def click_color_clicked(self):
         """ Opens a dialog in which you can select a color to be clicked in-game """
         clickColor = Click_Color(self)
-        clickColor.exec_()
+        clickColor.exec()
 
 
     def closeEvent(self, event):

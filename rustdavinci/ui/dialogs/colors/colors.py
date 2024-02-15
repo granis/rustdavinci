@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtGui import QColor
-from PyQt5.QtWidgets import QDialog, QLabel, QPushButton, QListWidgetItem
+from PyQt6.QtGui import QColor
+from PyQt6.QtWidgets import QDialog, QListWidgetItem
 
-from ui.dialogs.colors.colorsui import Ui_ColorsUI
-from lib.rustPaletteData import rust_palette
-from lib.color_functions import rgb_to_hex
+from rustdavinci.lib.color_functions import rgb_to_hex
+from rustdavinci.lib.rustPaletteData import rust_palette
+from rustdavinci.ui.dialogs.colors.colorsui import Ui_ColorsUI
+
 
 class Colors(QDialog):
 

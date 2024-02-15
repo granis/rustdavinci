@@ -1,27 +1,26 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtCore import QSettings, Qt, QRect, QDir
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QMessageBox, QInputDialog, QFileDialog, QApplication, QLabel
-
-from pynput import keyboard
-from io import BytesIO
-from PIL import Image
-
-import urllib.request
-import pyautogui
 import datetime
-import numpy
-import time
-import cv2
 import os
+import time
+import urllib.request
+from pathlib import Path
+from cv2 import COLOR_BGR2GRAY, TM_CCOEFF_NORMED, cvtColor, imread, matchTemplate, resize
 
-from lib.rustPaletteData import rust_palette
-from lib.captureArea import capture_area
-from lib.color_functions import hex_to_rgb, rgb_to_hex
-from ui.dialogs.captureDialog import CaptureAreaDialog
-from ui.settings.default_settings import default_settings
+import numpy
+import pyautogui
+from PIL import Image
+from pynput import keyboard
+from PyQt6.QtCore import QDir, QRect, QSettings, Qt
+from PyQt6.QtGui import QPixmap
+from PyQt6.QtWidgets import QApplication, QFileDialog, QInputDialog, QLabel, QMessageBox
+
+from ..ui.dialogs.captureDialog import CaptureAreaDialog
+from ..ui.settings.default_settings import default_settings
+from .captureArea import capture_area
+from .color_functions import hex_to_rgb, rgb_to_hex
+from .rustPaletteData import rust_palette
 
 
 class rustDaVinci():
@@ -159,10 +158,10 @@ class rustDaVinci():
                 self.org_img = None
                 self.org_img_ok = False
                 msg = QMessageBox(self.parent)
-                msg.setIcon(QMessageBox.Critical)
+                msg.setIcon(QMessageBox.Icon.Critical)
                 msg.setText("ERROR! Could not load the selected image...")
                 msg.setInformativeText(str(e))
-                msg.exec_()
+                msg.exec()
 
         self.update()
 
@@ -170,10 +169,10 @@ class rustDaVinci():
     def load_image_from_url(self):
         """ Load image from url """
         dialog = QInputDialog(self.parent)
-        dialog.setInputMode(QInputDialog.TextInput)
+        dialog.setInputMode(QInputDialog.InputMode.TextInput)
         dialog.setLabelText("Load image from URL:")
         dialog.resize(500,100)
-        ok_clicked = dialog.exec_()
+        ok_clicked = dialog.exec()
         url = dialog.textValue()
 
         if ok_clicked and url != "":
@@ -212,10 +211,10 @@ class rustDaVinci():
                 self.org_img = None
                 self.org_img_ok = False
                 msg = QMessageBox(self.parent)
-                msg.setIcon(QMessageBox.Critical)
+                msg.setIcon(QMessageBox.Icon.Critical)
                 msg.setText("ERROR! Could not load the selected image...")
                 msg.setInformativeText(str(e))
-                msg.exec_()
+                msg.exec()
 
         self.update()
 
@@ -409,7 +408,7 @@ class rustDaVinci():
                     self.canvas_h
         """
         dialog = CaptureAreaDialog(self.parent, 0)
-        ans = dialog.exec_()
+        ans = dialog.exec()
         if ans == 0: return False
 
         self.parent.hide()
@@ -420,9 +419,9 @@ class rustDaVinci():
             return False
         elif canvas_area[2] == 0 or canvas_area[3] == 0:
             msg = QMessageBox(self.parent)
-            msg.setIcon(QMessageBox.Critical)
+            msg.setIcon(QMessageBox.Icon.Critical)
             msg.setText("Invalid coordinates and ratio. Drag & drop the top left corner of the canvas to the bottom right corner.")
-            msg.exec_()
+            msg.exec()
             return False
 
         msg = QMessageBox(self.parent)
@@ -432,7 +431,7 @@ class rustDaVinci():
                     "Y =\t\t" + str(canvas_area[1]) + "\n" +
                     "Width =\t" + str(canvas_area[2]) + "\n" +
                     "Height =\t" + str(canvas_area[3]))
-        msg.exec_()
+        msg.exec()
 
         self.canvas_x = canvas_area[0]
         self.canvas_y = canvas_area[1]
@@ -444,7 +443,7 @@ class rustDaVinci():
     def locate_control_area_manually(self):
         """"""
         dialog = CaptureAreaDialog(self.parent, 1)
-        ans = dialog.exec_()
+        ans = dialog.exec()
         if ans == 0: return False
 
         self.parent.hide()
@@ -456,9 +455,9 @@ class rustDaVinci():
             return False
         elif ctrl_area[2] == 0 and ctrl_area[3] == 0:
             msg = QMessageBox(self.parent)
-            msg.setIcon(QMessageBox.Critical)
+            msg.setIcon(QMessageBox.Icon.Critical)
             msg.setText("Invalid coordinates and ratio. Drag & drop the top left corner of the canvas to the bottom right corner.")
-            msg.exec_()
+            msg.exec()
             self.update()
             return False
 
@@ -469,8 +468,8 @@ class rustDaVinci():
             "Width =\t" + str(ctrl_area [2]) + "\n" +
             "Height =\t" + str(ctrl_area [3]) + "\n\n" +
             "Would you like to update the painting controls area coordinates?",
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-        if btn == QMessageBox.Yes:
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+        if btn == QMessageBox.StandardButton.Yes:
             self.parent.ui.log_TextEdit.append("Controls area position updated...")
             self.settings.setValue("ctrl_x", str(ctrl_area[0]))
             self.settings.setValue("ctrl_y", str(ctrl_area[1]))
@@ -488,9 +487,9 @@ class rustDaVinci():
 
         msg = QMessageBox(self.parent)
         if ctrl_area == False:
-            msg.setIcon(QMessageBox.Critical)
+            msg.setIcon(QMessageBox.Icon.Critical)
             msg.setText("Couldn't find the painting control area automatically... Please try to manually capture it instead...")
-            msg.exec_()
+            msg.exec()
         else:
             btn = QMessageBox.question(self.parent, None,
                 "Coordinates:\n" +
@@ -499,8 +498,8 @@ class rustDaVinci():
                 "Width =\t" + str(ctrl_area [2]) + "\n" +
                 "Height =\t" + str(ctrl_area [3]) + "\n\n" +
                 "Would you like to update the painting controls area coordinates?",
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            if btn == QMessageBox.Yes:
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+            if btn == QMessageBox.StandardButton.Yes:
                 self.parent.ui.log_TextEdit.append("Controls area position updated...")
                 self.settings.setValue("ctrl_x", str(ctrl_area[0]))
                 self.settings.setValue("ctrl_y", str(ctrl_area[1]))
@@ -521,16 +520,16 @@ class rustDaVinci():
         screenshot = pyautogui.screenshot()
         screen_w, screen_h = screenshot.size
 
-        image_gray = cv2.cvtColor(numpy.array(screenshot), cv2.COLOR_BGR2GRAY)
+        image_gray = cvtColor(numpy.array(screenshot), COLOR_BGR2GRAY)
 
-        tmpl = cv2.imread("opencv_template/rust_palette_template.png", 0)
+        tmpl = imread(str(Path(__file__).resolve().parent) + "/opencv_template/rust_palette_template.png", 0)
         tmpl_w, tmpl_h = tmpl.shape[::-1]
 
         x_coord, y_coord = 0, 0
         threshold = 0.8
 
         for loop in range(50):
-            matches = cv2.matchTemplate(image_gray, tmpl, cv2.TM_CCOEFF_NORMED)
+            matches = matchTemplate(image_gray, tmpl, TM_CCOEFF_NORMED)
             loc = numpy.where(matches >= threshold)
 
             x_list, y_list = [], []
@@ -544,7 +543,7 @@ class rustDaVinci():
                 return x_coord, y_coord, tmpl_w, tmpl_h
 
             tmpl_w, tmpl_h = int(tmpl.shape[1]*1.035), int(tmpl.shape[0]*1.035)
-            tmpl = cv2.resize(tmpl, (int(tmpl_w), int(tmpl_h)))
+            tmpl = resize(tmpl, (int(tmpl_w), int(tmpl_h)))
 
             if tmpl_w > screen_w or tmpl_h > screen_h or loop == 49: return False
 
@@ -947,8 +946,8 @@ class rustDaVinci():
         question += "\nEst. painting time:\t\t\t" + str(time.strftime("%H:%M:%S", time.gmtime(self.estimated_time)))
         question += "\n\nWould you like to start the painting?"
         if show_info:
-            btn = QMessageBox.question(self.parent, None, question, QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-            if btn == QMessageBox.No:
+            btn = QMessageBox.question(self.parent, None, question, QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No, QMessageBox.StandardButton.Yes)
+            if btn == QMessageBox.StandardButton.No:
                 return
 
         # Disable mainwindow buttons while painting

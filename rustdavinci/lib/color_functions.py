@@ -3,7 +3,7 @@
 
 from math import sqrt
 
-from lib.rustPaletteData import rust_palette
+from .rustPaletteData import rust_palette
 
 
 def hex_to_rgb(hex):

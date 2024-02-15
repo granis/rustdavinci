@@ -1,23 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from PyQt5.QtCore import QRect, QSettings, QSize, Qt
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtWidgets import QMenu, QLabel, QFrame, QMainWindow, QMenu, QPushButton
+from PyQt6.QtCore import QRect, QSettings, QSize, Qt
+from PyQt6.QtWidgets import QFrame, QLabel, QMainWindow, QMenu, QPushButton
 
-from PIL import Image
-from PIL.ImageQt import ImageQt
+from ...lib.rustDaVinci import rustDaVinci
+from ..settings.settings import Settings
+from ..views.mainui import Ui_MainUI
 
-from ui.settings.settings import Settings
-from ui.views.mainui import Ui_MainUI
-from lib.rustDaVinci import rustDaVinci
-import ui.resources.icons_rc
 
 class MainWindow(QMainWindow):
 
     def __init__(self, parent=None):
         """ Main window init """
-        super(MainWindow, self).__init__(parent)
+        super().__init__(parent)
 
         # Setup UI
         self.ui = Ui_MainUI()
@@ -114,7 +110,7 @@ class MainWindow(QMainWindow):
     def settings_clicked(self):
         """ Create an instance of a settings window """
         settings = Settings(self)
-        settings.exec_()
+        settings.exec()
 
 
     def preview_clicked(self):
@@ -146,7 +142,7 @@ class MainWindow(QMainWindow):
 
         self.label = QLabel(self)
         self.label.setGeometry(QRect(240, 10, 550, 380))
-        self.label.setFrameShape(QFrame.Panel)
+        self.label.setFrameShape(QFrame.Shape.Panel)
         self.label.setLineWidth(1)
         self.label.show()
 
@@ -157,8 +153,8 @@ class MainWindow(QMainWindow):
         elif self.rustDaVinci.pixmap_on_display == 2:
             pixmap = self.rustDaVinci.quantized_img_pixmap_high
 
-        pixmap = pixmap.scaled(550, 380, Qt.KeepAspectRatio)
-        self.label.setAlignment(Qt.AlignCenter)
+        pixmap = pixmap.scaled(550, 380, Qt.AspectRatioMode.KeepAspectRatio)
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.label.setPixmap(pixmap)
 
         self.show_original_PushButton = QPushButton("Original", self)
