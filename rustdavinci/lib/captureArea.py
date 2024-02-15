@@ -79,7 +79,8 @@ def show_area(x, y, w, h):
     listener = keyboard.Listener(on_press=key_event)
     listener.start()
 
-    root = tkinter.Tk().withdraw()
+    root = tkinter.Tk()
+    root.withdraw()
     area = tkinter.Toplevel(root)
     area.overrideredirect(1)
     area.wm_attributes('-alpha',0.5)
