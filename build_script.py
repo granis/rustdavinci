@@ -32,13 +32,13 @@ def copy_content(src, dst, symlinks=False, ignore=None):
 
 def move_content(srcDir, dstDir):
     """ Move content from a given folder to a destination folder """
-    for filePath in glob.glob(srcDir + '\*'):
-        shutil.move(filePath, dstDir);
+    for filePath in glob.glob(srcDir + r'\*'):
+        shutil.move(filePath, dstDir)
 
 
 def main():
     # Build with pyinstaller
-    subprocess.run('pyinstaller --name="RustDaVinci" --icon=./../images/RustDaVinci-icon.ico app.pyw')
+    subprocess.run('pyinstaller --exclude-module=PySide6 --name="RustDaVinci" --icon=./images/RustDaVinci-icon.ico rustdavinci/app.pyw')
 
     # Create executable folder if not exist, else remove content of executable folder
     folder_name = "executable"
@@ -52,7 +52,7 @@ def main():
 
     # move opencv_template folder to executable folder
     os.mkdir("executable/RustDaVinci/opencv_template")
-    copy_content("opencv_template/", "executable/RustDaVinci/opencv_template/")
+    copy_content("rustdavinci/opencv_template/", "executable/RustDaVinci/opencv_template/")
 
     # Remove build directories
     remove_content("build/")
