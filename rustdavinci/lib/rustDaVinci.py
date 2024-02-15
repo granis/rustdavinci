@@ -425,7 +425,7 @@ class rustDaVinci():
             return False
 
         msg = QMessageBox(self.parent)
-        msg.setIcon(QMessageBox.Information)
+        msg.setIcon(QMessageBox.Icon.Information)
         msg.setText("Coordinates:\n" +
                     "X =\t\t" + str(canvas_area[0]) + "\n" +
                     "Y =\t\t" + str(canvas_area[1]) + "\n" +
@@ -827,7 +827,7 @@ class rustDaVinci():
         if state == 0: self.parent.ui.progress_ProgressBar.setValue(100)
 
         if bool(self.settings.value("window_topmost", default_settings["window_topmost"])):
-            self.parent.setWindowFlags(self.parent.windowFlags() & ~Qt.WindowStaysOnTopHint)
+            self.parent.setWindowFlags(self.parent.windowFlags() & ~Qt.WindowType.WindowStaysOnTopHint)
             self.parent.show()
         self.parent.activateWindow()
 
@@ -960,7 +960,7 @@ class rustDaVinci():
 
         # If window_topmost setting is set, activate window always on top functionality
         if window_topmost:
-            self.parent.setWindowFlags(self.parent.windowFlags() | Qt.WindowStaysOnTopHint)
+            self.parent.setWindowFlags(self.parent.windowFlags() | Qt.WindowType.WindowStaysOnTopHint)
             self.parent.show()
 
         # If hide_preview_paint and self.parent.is_expanded, close image preview
