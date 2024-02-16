@@ -412,7 +412,7 @@ class rustDaVinci():
         if ans == 0: return False
 
         self.parent.hide()
-        canvas_area = capture_area()
+        canvas_area = capture_area(self.org_img)
         self.parent.show()
 
         if canvas_area == False:
@@ -447,7 +447,10 @@ class rustDaVinci():
         if ans == 0: return False
 
         self.parent.hide()
-        ctrl_area = capture_area()
+        ctrl_image = Image.open(str(Path(__file__).resolve().with_name("rust_palette_template.png")))
+        ctrl_image.load()
+        ctrl_area = capture_area(ctrl_image)
+        ctrl_image.close()
         self.parent.show()
 
         if ctrl_area == False:
@@ -522,7 +525,7 @@ class rustDaVinci():
 
         image_gray = cvtColor(numpy.array(screenshot), COLOR_BGR2GRAY)
 
-        tmpl = imread(str(Path(__file__).resolve().parent) + "/opencv_template/rust_palette_template.png", 0)
+        tmpl = imread(str(Path(__file__).resolve().with_name("rust_palette_template.png")), 0)
         tmpl_w, tmpl_h = tmpl.shape[::-1]
 
         x_coord, y_coord = 0, 0

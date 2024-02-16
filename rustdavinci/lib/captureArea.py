@@ -6,6 +6,7 @@ import tkinter
 
 import pyautogui
 import win32api
+from PIL import Image, ImageOps
 from pynput import keyboard
 
 abort_capturing_mode = False
@@ -17,7 +18,15 @@ def key_event(key):
     abort_capturing_mode = True
 
 
-def capture_area():
+def get_resized(orig_img: Image, new_width: int, new_height: int) -> bool | tuple[int,int]:
+    try:
+        scaled = ImageOps.contain(orig_img, (new_width, new_height))
+        return scaled.size
+    except:
+        return False
+
+
+def capture_area(original:Image = None):
     """ Capture an area on the screen by clicking and dragging the mouse to the bottom right corner.
     Returns:    area_x,
                 area_y,
@@ -56,7 +65,15 @@ def capture_area():
                 if not active:
                     area_TL = mouse
                     active = True
-                area.geometry(str(mouse[0] - area_TL[0])+ "x" + str(mouse[1] - area_TL[1]))
+
+                if original:
+                    newsize = get_resized(original, mouse[0] - area_TL[0], mouse[1] - area_TL[1])
+                    if newsize:
+                        area.geometry(str(newsize[0])+ "x" + str(newsize[1]))
+                    else:
+                        area.geometry(str(mouse[0] - area_TL[0])+ "x" + str(mouse[1] - area_TL[1]))
+                else:
+                    area.geometry(str(mouse[0] - area_TL[0])+ "x" + str(mouse[1] - area_TL[1]))
             elif not pressed:
                 if active:
                     area.destroy()
