@@ -236,13 +236,13 @@ class rustDaVinci():
     def create_pixmaps(self):
         """ Create quantized pixmaps """
         # Pixmap for quantized image of quality normal
-        temp_normal = self.quantize_to_palette(self.org_img, True, 0)
+        temp_normal = self.quantize_to_palette(self.org_img, False)
         temp_normal.save("temp_normal.png")
         self.quantized_img_pixmap_normal = QPixmap("temp_normal.png")
         os.remove("temp_normal.png")
 
         # Pixmap for quantized image of quality high
-        temp_high = self.quantize_to_palette(self.org_img, True, 1)
+        temp_high = self.quantize_to_palette(self.org_img, True)
         temp_high.save("temp_high.png")
         self.quantized_img_pixmap_high = QPixmap("temp_high.png")
         os.remove("temp_high.png")
@@ -278,7 +278,11 @@ class rustDaVinci():
         else:
             resized_img = self.org_img.resize((self.canvas_w, self.canvas_h), Image.LANCZOS )
 
-        self.quantized_img = self.quantize_to_palette(resized_img)
+        quality = int(self.settings.value("quality", default_settings["quality"]))
+        self.quantized_img = self.quantize_to_palette(resized_img, quality)
+
+        # todo: cleanup
+        # self.quantized_img.save("temp_quantized.png")
         if self.quantized_img == False:
             self.org_img = None
             self.quantized_img = None
@@ -326,7 +330,7 @@ class rustDaVinci():
 
 
 # todo: cleanup
-    def quantize_to_palette(self, image: Image.Image, pixmap = False, pixmap_q = 0):
+    def quantize_to_palette(self, image: Image.Image, high_quality: bool):
         """ Convert an RGB, RGBA or L mode image to use a given P image's palette.
         Returns:    The quantized image
         """
@@ -339,26 +343,10 @@ class rustDaVinci():
         if self.org_img.mode == "RGBA":
             self.org_img = image.convert("RGB")
 
-        # if not pixmap:
-        #     quality = int(self.settings.value("quality", default_settings["quality"]))
-        #     if quality == 0:
-        #         im = image.convert("P", 0, self.palette_data.im)
-        #     elif quality == 1:
-        #         im = image.convert("P", 1, self.palette_data.im) # Dithering
-        # else:
-        #     im = image.im.convert("P", pixmap_q, self.palette_data.im)
+        dither = Image.Dither.FLOYDSTEINBERG if high_quality == 1 else Image.Dither.NONE
 
-        # try: return image._new(im)
-        # except AttributeError: return image._makeself(im)
-
-        dither = Image.Dither.FLOYDSTEINBERG if pixmap_q == 1 else Image.Dither.NONE
-
-        if pixmap:
-            quality = int(self.settings.value("quality", default_settings["quality"]))
-            if quality == 0:
-                return self.org_img.quantize(palette=self.palette_data, dither=dither)
-            else:
-                return self.org_img.quantize(method=Image.Quantize.MAXCOVERAGE, palette=self.palette_data, dither=dither)
+        if high_quality:
+            return self.org_img.quantize(method=Image.Quantize.MAXCOVERAGE, palette=self.palette_data, dither=dither)
         else:
             return self.org_img.quantize(palette=self.palette_data, dither=dither)
 
