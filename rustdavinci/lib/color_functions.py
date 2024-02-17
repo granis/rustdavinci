@@ -27,3 +27,14 @@ def closest_color(rgb):
         color_diff = sqrt(abs(r - cr)**2 + abs(g - cg)**2 + abs(b - cb)**2)
         color_diffs.append((color_diff, color))
     return min(color_diffs)[1]
+
+def blend_alpha(
+    color: tuple[int, int, int], bg_color: tuple[int, int, int], alpha: float
+) -> tuple[int, int, int]:
+    color_r, color_g, color_b = color
+    background_r, background_g, background_b = bg_color
+
+    new_r = int(background_r * (1 - alpha) + color_r * alpha)
+    new_g = int(background_g * (1 - alpha) + color_g * alpha)
+    new_b = int(background_b * (1 - alpha) + color_b * alpha)
+    return (new_r, new_g, new_b)

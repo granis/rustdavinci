@@ -6,10 +6,10 @@ import os
 import time
 import urllib.request
 from pathlib import Path
-from cv2 import COLOR_BGR2GRAY, TM_CCOEFF_NORMED, cvtColor, imread, matchTemplate, resize
 
 import numpy
 import pyautogui
+from cv2 import COLOR_BGR2GRAY, TM_CCOEFF_NORMED, cvtColor, imread, matchTemplate, resize
 from PIL import Image
 from pynput import keyboard
 from PyQt6.QtCore import QDir, QRect, QSettings, Qt
@@ -19,7 +19,7 @@ from PyQt6.QtWidgets import QApplication, QFileDialog, QInputDialog, QLabel, QMe
 from ..ui.dialogs.captureDialog import CaptureAreaDialog
 from ..ui.settings.default_settings import default_settings
 from .captureArea import capture_area
-from .color_functions import hex_to_rgb, rgb_to_hex
+from .color_functions import blend_alpha, hex_to_rgb, rgb_to_hex
 from .rustPaletteData import rust_palette
 
 
@@ -294,79 +294,39 @@ class rustDaVinci():
 
     def update_palette(self, rgb_background):
         """  """
-        use_hidden_colors = bool(self.settings.value("hidden_colors", default_settings["hidden_colors"]))
         use_brush_opacities = bool(self.settings.value("brush_opacities", default_settings["brush_opacities"]))
-
-        background_index = rust_palette.index(rgb_background)
-
-        if self.settings.value("skip_background_color", default_settings["skip_background_color"]):
-            background_opacities = [background_index % 256, (background_index+(64*1)) % 256, (background_index+(64*2)) % 256, (background_index+(64*3)) % 256]
-        else:
-            background_opacities = []
 
         # Select the palette to be used
         self.palette_data = Image.new("P", (1, 1))
         palette = ()
         self.updated_palette = []
 
-        # Choose how many colors in the palette
-        if use_hidden_colors:
-            if use_brush_opacities:
-                for i, color in enumerate(rust_palette):
-                    if i in background_opacities:
-                        palette = palette + rgb_background
-                        self.updated_palette.append(rgb_background)
-                    else:
-                        palette = palette + color
-                        self.updated_palette.append(color)
-            else:
-                for i, color in enumerate(rust_palette):
-                    if i == 64:
-                        palette = palette + (2, 2, 2) * 192
-                        break
-                    if i in background_opacities:
-                        palette = palette + rgb_background
-                        self.updated_palette.append(rgb_background)
-                    else:
-                        palette = palette + color
-                        self.updated_palette.append(color)
-        else:
-            if use_brush_opacities:
-                for i, color in enumerate(rust_palette):
-                    if (i >= 0 and i <= 19) or (i >= 64 and i <= 83) or (i >= 128 and i <= 147) or (i >= 192 and i <= 211):
-                        if i in background_opacities:
-                            palette = palette + rgb_background
-                            self.updated_palette.append(rgb_background)
-                        else:
-                            palette = palette + color
-                            self.updated_palette.append(color)
-                palette = palette + (2, 2, 2) * 176
-            else:
-                for i, color in enumerate(rust_palette):
-                    if i == 20:
-                        palette = palette + (2, 2, 2) * 236
-                        break
-                    if i in background_opacities:
-                        palette = palette + rgb_background
-                        self.updated_palette.append(rgb_background)
-                    else:
-                        palette = palette + color
-                        self.updated_palette.append(color)
 
+        for i, color in enumerate(rust_palette):
+            if i == 64:
+                break
+            palette = palette + color
+            self.updated_palette.append(color)
+
+        if use_brush_opacities:
+            for opacity_level in (0.25, 0.50, 0.75):
+                for color in rust_palette:
+                    new_color = blend_alpha(color, (255,255,255), opacity_level)
+                    palette = palette + new_color
+                    self.updated_palette.append(new_color)
+        else:
+            palette = palette + (0, 0, 0) * 192
 
         if rgb_background in self.updated_palette:
-            if use_hidden_colors:
-                self.background_color = self.updated_palette.index(rgb_background) % 64
-            else:
-                self.background_color = self.updated_palette.index(rgb_background) % 20
+            self.background_color = self.updated_palette.index(rgb_background) % 64
         else:
             self.background_color = None
 
         self.palette_data.putpalette(palette)
-        self.palette_data.load()
 
 
-    def quantize_to_palette(self, image, pixmap = False, pixmap_q = 0):
+# todo: cleanup
+    def quantize_to_palette(self, image: Image.Image, pixmap = False, pixmap_q = 0):
         """ Convert an RGB, RGBA or L mode image to use a given P image's palette.
         Returns:    The quantized image
         """
@@ -379,17 +339,28 @@ class rustDaVinci():
         if self.org_img.mode == "RGBA":
             self.org_img = image.convert("RGB")
 
-        if not pixmap:
+        # if not pixmap:
+        #     quality = int(self.settings.value("quality", default_settings["quality"]))
+        #     if quality == 0:
+        #         im = image.convert("P", 0, self.palette_data.im)
+        #     elif quality == 1:
+        #         im = image.convert("P", 1, self.palette_data.im) # Dithering
+        # else:
+        #     im = image.im.convert("P", pixmap_q, self.palette_data.im)
+
+        # try: return image._new(im)
+        # except AttributeError: return image._makeself(im)
+
+        dither = Image.Dither.FLOYDSTEINBERG if pixmap_q == 1 else Image.Dither.NONE
+
+        if pixmap:
             quality = int(self.settings.value("quality", default_settings["quality"]))
             if quality == 0:
-                im = image.im.convert("P", 0, self.palette_data.im)
-            elif quality == 1:
-                im = image.im.convert("P", 1, self.palette_data.im) # Dithering
+                return self.org_img.quantize(palette=self.palette_data, dither=dither)
+            else:
+                return self.org_img.quantize(method=Image.Quantize.MAXCOVERAGE, palette=self.palette_data, dither=dither)
         else:
-            im = image.im.convert("P", pixmap_q, self.palette_data.im)
-
-        try: return image._new(im)
-        except AttributeError: return image._makeself(im)
+            return self.org_img.quantize(palette=self.palette_data, dither=dither)
 
 
     def clear_image(self):
@@ -573,105 +544,66 @@ class rustDaVinci():
         ctrl_y = int(self.settings.value("ctrl_y", default_settings["ctrl_y"]))
         ctrl_w = int(self.settings.value("ctrl_w", default_settings["ctrl_w"]))
         ctrl_h = int(self.settings.value("ctrl_h", default_settings["ctrl_h"]))
+        # todo: refactor
+        # ctrl_x, ctrl_y, ctrl_w, ctrl_h = self.locate_control_area_opencv()
 
-        # Calculate the distance between two items on a row of six items (Size)
-        first_x_coord_of_six_v1 = ctrl_x + (ctrl_w/6.5454)
-        second_x_coord_of_six_v1 = ctrl_x + (ctrl_w/3.4285)
-        dist_btwn_x_coords_of_six_v1 = second_x_coord_of_six_v1 - first_x_coord_of_six_v1
+        # Calculate the distance between two items on a row of seven items (brush)
+        first_x_coord_of_seven = ctrl_x + (ctrl_w/9.5135)
+        second_x_coord_of_seven = ctrl_x + (ctrl_w/4.1811)
+        dist_btwn_x_coords_of_seven_v1 = second_x_coord_of_seven - first_x_coord_of_seven
 
-        # Calculate the distance between two items on a row of six items (Opacity)
-        first_x_coord_of_six_v2 = ctrl_x + (ctrl_w/7.5789)
-        second_x_coord_of_six_v2 = ctrl_x + (ctrl_w/3.5555)
-        dist_btwn_x_coords_of_six_v2 = second_x_coord_of_six_v2 - first_x_coord_of_six_v2
+        # Calculate the distance between min and max on a slider (size, spacing, opacity)
+        first_x_coord_of_slider_v2 = ctrl_x + (ctrl_w/2.8046)
+        second_x_coord_of_slider_v2 = ctrl_x + (ctrl_w/1.2913)
+        step_min_max_slider_v2 = (second_x_coord_of_slider_v2 - first_x_coord_of_slider_v2)
 
         # Calculate the distance between two items on a row of four items (Colors width)
-        first_x_coord_of_four = ctrl_x + (ctrl_w/6)
-        second_x_coord_of_four = ctrl_x + (ctrl_w/2.5714)
+        first_x_coord_of_four = ctrl_x + (ctrl_w/6.6415)
+        second_x_coord_of_four = ctrl_x + (ctrl_w/2.6268)
         dist_btwn_x_coords_of_four = second_x_coord_of_four - first_x_coord_of_four
 
-        # Calculate the distance between two items on a column of eight items (Colors height)
-        first_y_coord_of_eight = ctrl_y + (ctrl_h/2.3220)
-        second_y_coord_of_eight = ctrl_y + (ctrl_h/1.9855)
-        dist_btwn_y_coords_of_eight = second_y_coord_of_eight - first_y_coord_of_eight
+        # Calculate the distance between two items on a column of sixteen items (Colors height)
+        first_y_coord_of_sixteen = ctrl_y + (ctrl_h/2.2946)
+        second_y_coord_of_sixteen = ctrl_y + (ctrl_h/2.1239)
+        dist_btwn_y_coords_of_sixteen = second_y_coord_of_sixteen - first_y_coord_of_sixteen
 
         # Set the point location of the remove & update buttons
         self.ctrl_remove = ((ctrl_x + (ctrl_w/2.7692)), (ctrl_y + (ctrl_h/19.5714)))
         self.ctrl_update = ((ctrl_x + (ctrl_w/1.5652)), (ctrl_y + (ctrl_h/19.5714)))
 
-
         for size in range(6):
-            self.ctrl_size.append((  first_x_coord_of_six_v1 +
-                                     (size * dist_btwn_x_coords_of_six_v1),
-                                     (ctrl_y + (ctrl_h/6.9661))))
+            self.ctrl_size.append(
+                (
+                    first_x_coord_of_slider_v2 + (size * (step_min_max_slider_v2 / 5)),
+                    (ctrl_y + (ctrl_h / 5.6231)),
+                )
+            )
 
-        for brush in range(4):
-            self.ctrl_brush.append(( first_x_coord_of_four +
-                                     (brush * dist_btwn_x_coords_of_four),
-                                     (ctrl_y + (ctrl_h/4.2371))))
+        for brush in range(7):
+            self.ctrl_brush.append(
+                (
+                    first_x_coord_of_seven + (brush * dist_btwn_x_coords_of_seven_v1),
+                    (ctrl_y + (ctrl_h / 8.9195)),
+                )
+            )
 
-        for opacity in range(6):
-            self.ctrl_opacity.append((   first_x_coord_of_six_v2 +
-                                         (opacity * dist_btwn_x_coords_of_six_v2),
-                                         (ctrl_y + (ctrl_h/3.0332))))
+        for opacity in range(1,5):
+            # 25%, 50%, 75%, 100%
+            self.ctrl_opacity.append(
+                (
+                    first_x_coord_of_slider_v2 + (opacity * step_min_max_slider_v2 / 4),
+                    (ctrl_y + (ctrl_h / 3.5113)),
+                )
+            )
 
-        for row in range(8):
+        for row in range(16):
             for column in range(4):
-                if (row == 0 or row == 4) and column == 3: continue
-                if (row == 1 or row == 5) and (column == 2 or column == 3): continue
-                if row == 2 and column == 0: continue
-                if row == 3 and (column == 0 or column == 1): continue
-                if row == 6 and column == 2: continue
-                if row == 7 and (column == 1 or column == 2): continue
-                self.ctrl_color.append(  (first_x_coord_of_four + (column * dist_btwn_x_coords_of_four),
-                                         (first_y_coord_of_eight + (row * dist_btwn_y_coords_of_eight))))
-
-        # Hidden colors location
-        if bool(self.settings.value("hidden_colors", default_settings["hidden_colors"])):
-            self.ctrl_color.append((ctrl_x + (ctrl_w/18.0000), ctrl_y + (ctrl_h/2.1518)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/4.2353), ctrl_y + (ctrl_h/2.1406)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/13.0909), ctrl_y + (ctrl_h/1.8430)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/3.6923), ctrl_y + (ctrl_h/1.9116)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.8228), ctrl_y + (ctrl_h/1.8853)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.3714), ctrl_y + (ctrl_h/1.8348)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.0746), ctrl_y + (ctrl_h/1.9116)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.0667), ctrl_y + (ctrl_h/1.8430)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.8947), ctrl_y + (ctrl_h/1.6440)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.3333), ctrl_y + (ctrl_h/1.6181)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.2857), ctrl_y + (ctrl_h/1.6440)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.0827), ctrl_y + (ctrl_h/1.6506)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.0588), ctrl_y + (ctrl_h/1.6310)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.0588), ctrl_y + (ctrl_h/1.6118)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.8462), ctrl_y + (ctrl_h/1.4472)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.4545), ctrl_y + (ctrl_h/1.4784)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.3846), ctrl_y + (ctrl_h/1.4838)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.3333), ctrl_y + (ctrl_h/1.4784)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.1803), ctrl_y + (ctrl_h/1.4523)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.1077), ctrl_y + (ctrl_h/1.4421)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.0746), ctrl_y + (ctrl_h/1.4731)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/18.0000), ctrl_y + (ctrl_h/1.4679)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/3.7895), ctrl_y + (ctrl_h/1.4371)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/16.0000), ctrl_y + (ctrl_h/1.3258)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/3.8919), ctrl_y + (ctrl_h/1.3258)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/3.4286), ctrl_y + (ctrl_h/1.3301)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/16.0000), ctrl_y + (ctrl_h/1.2088)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/3.6923), ctrl_y + (ctrl_h/1.2342)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/4.0000), ctrl_y + (ctrl_h/1.2018)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/3.2000), ctrl_y + (ctrl_h/1.1983)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.9200), ctrl_y + (ctrl_h/1.2342)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.4845), ctrl_y + (ctrl_h/1.1844)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.3714), ctrl_y + (ctrl_h/1.1844)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.0746), ctrl_y + (ctrl_h/1.2053)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/16.0000), ctrl_y + (ctrl_h/1.1048)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/4.2353), ctrl_y + (ctrl_h/1.1078)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.3333), ctrl_y + (ctrl_h/1.1078)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.0667), ctrl_y + (ctrl_h/1.1048)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/3.3488), ctrl_y + (ctrl_h/1.0327)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/3.4286), ctrl_y + (ctrl_h/1.0512)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.4694), ctrl_y + (ctrl_h/1.0327)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/2.7692), ctrl_y + (ctrl_h/1.1982)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/2.0571), ctrl_y + (ctrl_h/1.2160)))
-            self.ctrl_color.append((ctrl_x + (ctrl_w/1.3211), ctrl_y + (ctrl_h/1.4784)))
-
+                self.ctrl_color.append(
+                    (
+                        first_x_coord_of_four + (column * dist_btwn_x_coords_of_four),
+                        (first_y_coord_of_sixteen + (row * dist_btwn_y_coords_of_sixteen)),
+                    )
+                )
 
     def calculate_statistics(self):
         """ Calculate what colors, how many pixels and lines for the painting
@@ -847,23 +779,16 @@ class rustDaVinci():
             self.click_pixel(self.ctrl_brush[brush])
             time.sleep(self.ctrl_area_delay)
 
-        if self.use_hidden_colors:
-            if   color >= 0  and color < 64: self.click_pixel(self.ctrl_opacity[5])
-            elif color >= 64 and color < 128: self.click_pixel(self.ctrl_opacity[4])
-            elif color >= 128 and color < 192: self.click_pixel(self.ctrl_opacity[3])
-            elif color >= 192 and color < 256: self.click_pixel(self.ctrl_opacity[2])
-        else:
-            if   color >= 0  and color < 20: self.click_pixel(self.ctrl_opacity[5])
-            elif color >= 20 and color < 40: self.click_pixel(self.ctrl_opacity[4])
-            elif color >= 40 and color < 60: self.click_pixel(self.ctrl_opacity[3])
-            elif color >= 60 and color < 80: self.click_pixel(self.ctrl_opacity[2])
+        if   color >= 0  and color < 64: self.click_pixel(self.ctrl_opacity[3])
+        elif color >= 64 and color < 128: self.click_pixel(self.ctrl_opacity[2])
+        elif color >= 128 and color < 192: self.click_pixel(self.ctrl_opacity[1])
+        elif color >= 192: self.click_pixel(self.ctrl_opacity[0])
+
+
         time.sleep(self.ctrl_area_delay)
 
         if self.current_ctrl_color != color:
-            if self.use_hidden_colors:
-                self.click_pixel(self.ctrl_color[color%64])
-            else:
-                self.click_pixel(self.ctrl_color[color%20])
+            self.click_pixel(self.ctrl_color[color%64])
             time.sleep(self.ctrl_area_delay)
 
 
@@ -885,18 +810,11 @@ class rustDaVinci():
             bg_colors = []
 
             if bg_color_rgb in self.updated_palette:
-                if use_hidden_colors:
-                    if use_opacities:
-                        bg_index = self.updated_palette.index(bg_color_rgb) % 64
-                        bg_colors = [bg_index, bg_index+(64*1), bg_index+(64*2), bg_index+(64*3)]
-                    else:
-                        bg_colors = [self.updated_palette.index(bg_color_rgb) % 64]
+                if use_opacities:
+                    bg_index = self.updated_palette.index(bg_color_rgb) % 64
+                    bg_colors = [bg_index, bg_index+(64*1), bg_index+(64*2), bg_index+(64*3)]
                 else:
-                    if use_opacities:
-                        bg_index = self.updated_palette.index(bg_color_rgb) % 20
-                        bg_colors = [bg_index, bg_index+(20*1), bg_index+(20*2), bg_index+(20*3)]
-                    else:
-                        bg_colors = [self.updated_palette.index(bg_color_rgb) % 20]
+                    bg_colors = [self.updated_palette.index(bg_color_rgb) % 64]
 
             self.skip_colors = self.skip_colors + bg_colors
 
