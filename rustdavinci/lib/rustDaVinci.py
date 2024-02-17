@@ -541,8 +541,8 @@ class rustDaVinci():
         dist_btwn_x_coords_of_seven_v1 = second_x_coord_of_seven - first_x_coord_of_seven
 
         # Calculate the distance between min and max on a slider (size, spacing, opacity)
-        first_x_coord_of_slider_v2 = ctrl_x + (ctrl_w/2.8046)
-        second_x_coord_of_slider_v2 = ctrl_x + (ctrl_w/1.2913)
+        first_x_coord_of_slider_v2 = ctrl_x + (ctrl_w/2.7810)
+        second_x_coord_of_slider_v2 = ctrl_x + (ctrl_w/1.2770)
         step_min_max_slider_v2 = (second_x_coord_of_slider_v2 - first_x_coord_of_slider_v2)
 
         # Calculate the distance between two items on a row of four items (Colors width)
@@ -768,9 +768,9 @@ class rustDaVinci():
             time.sleep(self.ctrl_area_delay)
 
         if   color >= 0  and color < 64: self.click_pixel(self.ctrl_opacity[3])
-        elif color >= 64 and color < 128: self.click_pixel(self.ctrl_opacity[2])
+        elif color >= 64 and color < 128: self.click_pixel(self.ctrl_opacity[0])
         elif color >= 128 and color < 192: self.click_pixel(self.ctrl_opacity[1])
-        elif color >= 192: self.click_pixel(self.ctrl_opacity[0])
+        elif color >= 192: self.click_pixel(self.ctrl_opacity[2])
 
 
         time.sleep(self.ctrl_area_delay)
