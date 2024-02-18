@@ -16,6 +16,8 @@ from PyQt6.QtCore import QDir, QRect, QSettings, Qt
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import QApplication, QFileDialog, QInputDialog, QLabel, QMessageBox
 
+from rustdavinci.ui.dialogs.preview.preview import Preview
+
 from ..ui.dialogs.captureDialog import CaptureAreaDialog
 from ..ui.settings.default_settings import default_settings
 from .captureArea import capture_area
@@ -371,7 +373,18 @@ class rustDaVinci():
         if ans == 0: return False
 
         self.parent.hide()
-        canvas_area = capture_area(self.org_img)
+        quality = int(self.settings.value("quality", default_settings["quality"]))
+        preview_canvas = Preview(self.parent, self.quantize_to_palette(self.org_img_template, quality))
+        preview_canvas.exec()
+        preview_size = preview_canvas.ui.imagePreviewLabel.size()
+        preview_pos = preview_canvas.window().pos()
+        canvas_area = (
+            preview_pos.x(),
+            preview_pos.y(),
+            preview_size.width(),
+            preview_size.height(),
+        )
+
         self.parent.show()
 
         if canvas_area == False:
